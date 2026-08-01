@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Planowane trasy, mapy i automatyczny skan aktywności z kont Komoot w jednym panelu.",
+          "Monitor tras rowerowych Team Zagórski: planowane trasy, mapy na żywo i automatyczny skan aktywności z kont Komoot.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
