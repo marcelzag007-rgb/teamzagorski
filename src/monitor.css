@@ -241,3 +241,10 @@ header::before{
 }
 
 footer{text-align:center; font-family:'Share Tech Mono', monospace; font-size:11px; color:var(--text-muted); margin-top:10px; letter-spacing:0.5px;}
+
+.scan-info{
+  font-family:'Share Tech Mono', monospace;
+  font-size:11px;
+  color:var(--text-muted);
+  letter-spacing:0.5px;
+}
