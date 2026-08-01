@@ -78,7 +78,7 @@ async function scanOne(userId: string, fallbackName: string): Promise<KomootUser
       .map((a) => {
         const t = a._embedded.tour;
         const km = (t.distance ?? 0) / 1000;
-        const hours = (t.duration ?? 0) / 3600;
+        const hours = ((t.time_in_motion || t.duration) ?? 0) / 3600;
         return {
           id: String(t.id),
           name: t.name || "Aktywność",
