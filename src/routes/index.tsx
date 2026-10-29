@@ -10,13 +10,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Monitor tras rowerowych Team Zagórski: planowane trasy, mapy na żywo i automatyczny skan aktywności z kont Komoot.",
+          "Monitor tras rowerowych Team Zagórski: aktywności i dystans z kont Komoot.",
       },
       { property: "og:title", content: "Monitor Tras — Team Zagórski" },
       {
         property: "og:description",
         content:
-          "Monitor tras rowerowych Team Zagórski: planowane trasy, mapy na żywo i automatyczny skan aktywności z kont Komoot.",
+          "Monitor tras rowerowych Team Zagórski: aktywności i dystans z kont Komoot.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -24,35 +24,6 @@ export const Route = createFileRoute("/")({
   }),
   component: Index,
 });
-
-const ROUTES = [
-  {
-    id: "2605710107",
-    name: "Hel – Świnoujście",
-    difficulty: "Trudne",
-    duration: "27:22 h",
-    distance: "421 km",
-    distanceKm: 421,
-    speed: "15.4 km/h",
-    ascent: "1 170 m",
-    ascentM: 1170,
-    descent: "1 170 m",
-    date: "28 września 2025",
-  },
-  {
-    id: "2944456404",
-    name: "Sonne Tanken Mural Utility Box – Leśna",
-    difficulty: "Trudne",
-    duration: "30:04 h",
-    distance: "506 km",
-    distanceKm: 506,
-    speed: "16.8 km/h",
-    ascent: "1 670 m",
-    ascentM: 1670,
-    descent: "1 440 m",
-    date: "9 maja 2026",
-  },
-];
 
 const ACCOUNTS = [
   { userId: "2992466765098", name: "Przemek i Gosia" },
@@ -78,8 +49,6 @@ function Clock() {
 }
 
 function Index() {
-  const [activeIdx, setActiveIdx] = useState(0);
-
   const { data, isFetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["komoot-scan"],
     queryFn: () => scanKomoot({ data: { users: ACCOUNTS } }),
@@ -87,18 +56,19 @@ function Index() {
   });
 
   const users = data?.users ?? [];
-  const found = new Set(data?.foundTourIds ?? []);
-  const isCompleted = (id: string) => found.has(id);
-
-  const totalKm = ROUTES.reduce((a, r) => a + r.distanceKm, 0);
-  const totalAsc = ROUTES.reduce((a, r) => a + r.ascentM, 0);
-  const doneCount = ROUTES.filter((r) => isCompleted(r.id)).length;
-
   const allIds = users.flatMap((u) => u.items.map((i) => i.id));
   const sharedIds = new Set(allIds.filter((id, i) => allIds.indexOf(id) !== i));
 
-  const r = ROUTES[activeIdx]!;
-  const activeDone = isCompleted(r.id);
+  const MARCEL_ID = "5757320444013";
+  const PG_ID = "2992466765098";
+  const countFor = (id: string) => users.find((u) => u.userId === id)?.items.length ?? 0;
+
+  // wspólne trasy liczone raz, żeby nie dublować dystansu
+  const uniqueItems = new Map<string, number>();
+  users.forEach((u) =>
+    u.items.forEach((i) => uniqueItems.set(i.id, parseFloat(i.distance))),
+  );
+  const totalKm = [...uniqueItems.values()].reduce((a, b) => a + (b || 0), 0);
 
   return (
     <>
@@ -133,10 +103,9 @@ function Index() {
 
         <div className="briefing">
           {[
-            { k: "Trasy planowane", v: String(ROUTES.length) },
-            { k: "Łączny dystans", v: `${totalKm} km` },
-            { k: "Łączny podjazd", v: `${totalAsc.toLocaleString("pl-PL")} m` },
-            { k: "Ukończone", v: `${doneCount} / ${ROUTES.length}` },
+            { k: "Trasy Marcel", v: String(countFor(MARCEL_ID)) },
+            { k: "Trasy Przemek i Gosia", v: String(countFor(PG_ID)) },
+            { k: "Całkowity dystans wszystkich tras", v: `${totalKm.toFixed(1)} km` },
           ].map((c) => (
             <div className="brief-cell" key={c.k}>
               <div className="k">{c.k}</div>
@@ -156,63 +125,6 @@ function Index() {
                 ? `Ostatni skan: ${new Date(dataUpdatedAt).toLocaleTimeString("pl-PL")} · ${allIds.length} aktywności`
                 : "Brak danych"}
           </span>
-        </div>
-
-        <div className="section-title">
-          <h2>Trasy planowane</h2>
-          <div className="line" />
-        </div>
-        <div className="module">
-          <div className="tabs">
-            {ROUTES.map((route, i) => {
-              const done = isCompleted(route.id);
-              return (
-                <div
-                  key={route.id}
-                  className={`tab route-${i} ${i === activeIdx ? "active" : ""} ${done ? "completed" : ""}`}
-                  onClick={() => setActiveIdx(i)}
-                >
-                  <div className="tab-route-label">Trasa {i + 1}</div>
-                  <div className="tab-name">{route.name}</div>
-                  <div className="tab-status">
-                    <span className="dotmini" />
-                    {done ? "UKOŃCZONA" : "OCZEKUJE"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="stage">
-            <div className={`map-frame ${activeDone ? "completed" : ""}`}>
-              <span className={`map-label ${activeDone ? "alert" : ""}`}>
-                {activeDone ? "⚠ TRASA UKOŃCZONA · " : "MAPA · NA ŻYWO · "}TRASA {activeIdx + 1}
-              </span>
-              <iframe
-                className="show"
-                title={r.name}
-                loading="lazy"
-                src={`https://www.komoot.com/tour/${r.id}/embed?hl=pl&layout=classic&profile=1`}
-              />
-            </div>
-            <div className="stats">
-              <div className="route-title">{r.name}</div>
-              <div className="route-sub">TOUR_ID // {r.id}</div>
-              {[
-                ["Trudność", r.difficulty, "diff"],
-                ["Dystans", r.distance, "accent"],
-                ["Czas", r.duration, ""],
-                ["Śr. prędkość", r.speed, ""],
-                ["Podjazd", `▲ ${r.ascent}`, ""],
-                ["Zjazd", `▼ ${r.descent}`, ""],
-                ["Data wyprawy", r.date, ""],
-              ].map(([label, value, cls]) => (
-                <div className="stat-row" key={label}>
-                  <span className="stat-label">{label}</span>
-                  <span className={`stat-value ${cls}`}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="section-title">
